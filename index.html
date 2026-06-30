@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CorkBoard — Downtown San Jose</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Libre+Franklin:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper2:#fdf8ec;
+    --ink:#2b2420;
+    --pin-red:#b8413a;
+    --pin-blue:#3c5a73;
+    --pin-green:#4f6b4a;
+    --pin-gold:#a9821f;
+    --pin-purple:#6a4e7a;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    font-family:'Libre Franklin',sans-serif;
+    background:#3a342e;
+  }
+
+  header{
+    text-align:center;
+    padding:20px;
+  }
+
+  header h1{
+    font-family:'Special Elite';
+    color:#f0e6d2;
+    margin:0;
+    font-size:42px;
+  }
+
+  header p{
+    color:#cdbfa3;
+    margin:5px 0 0;
+  }
+
+  .filters{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    padding:10px;
+    flex-wrap:wrap;
+  }
+
+  .chip{
+    background:#54493e;
+    color:#e8ddc9;
+    border:none;
+    padding:7px 14px;
+    border-radius:20px;
+    cursor:pointer;
+  }
+
+  .chip.active{opacity:1;}
+
+  .frame{
+    max-width:1000px;
+    margin:auto;
+    padding:10px 15px 50px;
+  }
+
+  .cork{
+    background:#c9a877;
+    min-height:600px;
+    padding:20px;
+    border-radius:6px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:20px;
+  }
+
+  .flyer{
+    background:var(--paper2);
+    padding:14px;
+    border-radius:6px;
+    box-shadow:0 10px 20px rgba(0,0,0,.25);
+  }
+
+  .tag{
+    font-size:10px;
+    padding:3px 8px;
+    color:white;
+    display:inline-block;
+    margin-bottom:6px;
+    font-family:'Special Elite';
+  }
+
+  .market{background:var(--pin-green);}
+  .foodhall{background:var(--pin-gold);}
+  .artwalk{background:var(--pin-blue);}
+  .cityart{background:var(--pin-purple);}
+
+  .flyer h2{
+    font-family:'Special Elite';
+    margin:6px 0;
+  }
+
+  .when{font-weight:bold;color:#7a2e28;font-size:13px;}
+  .where{font-size:12px;opacity:.7;}
+
+  .add{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:3px dashed rgba(0,0,0,.3);
+    cursor:pointer;
+    min-height:140px;
+    font-weight:bold;
+  }
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.7);
+    display:none;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .overlay.open{display:flex;}
+
+  .card{
+    background:#fdf8ec;
+    padding:20px;
+    width:90%;
+    max-width:420px;
+  }
+
+  input,textarea,select{
+    width:100%;
+    padding:8px;
+    margin:6px 0 10px;
+  }
+
+  button{
+    padding:8px 12px;
+    border:none;
+    background:#b8413a;
+    color:white;
+    cursor:pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>CorkBoard</h1>
+  <p>Full working version (GitHub Pages safe)</p>
+</header>
+
+<div class="filters">
+  <button class="chip active" onclick="filter('all')">All</button>
+  <button class="chip" onclick="filter('market')">Markets</button>
+  <button class="chip" onclick="filter('foodhall')">Food</button>
+  <button class="chip" onclick="filter('artwalk')">Art</button>
+</div>
+
+<div class="frame">
+  <div class="cork" id="cork"></div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<script>
+
+const KEY="corkboard";
+let data=[];
+let current="all";
+
+/* SAFE STORAGE FIX */
+function load(){
+  const saved = localStorage.getItem(KEY);
+  data = saved ? JSON.parse(saved) : defaultData();
+  render();
+}
+
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(data));
+}
+
+function defaultData(){
+  return [
+    {
+      id:1,
+      cat:"market",
+      label:"Market",
+      title:"Downtown Farmers Market",
+      when:"Wednesdays 9–1",
+      where:"San Jose Downtown"
+    },
+    {
+      id:2,
+      cat:"foodhall",
+      label:"Food Hall",
+      title:"SoFA Market",
+      when:"Daily 11–9",
+      where:"387 S 1st St"
+    }
+  ];
+}
+
+function render(){
+  const cork=document.getElementById("cork");
+  cork.innerHTML="";
+
+  data.filter(x=>current==="all"||x.cat===current)
+  .forEach(x=>{
+    const d=document.createElement("div");
+    d.className="flyer";
+    d.innerHTML=`
+      <div class="tag ${x.cat}">${x.label}</div>
+      <h2>${x.title}</h2>
+      <div class="when">${x.when}</div>
+      <div class="where">${x.where}</div>
+    `;
+    cork.appendChild(d);
+  });
+
+  const add=document.createElement("div");
+  add.className="add";
+  add.innerText="+ Add Flyer";
+  add.onclick=addFlyer;
+  cork.appendChild(add);
+}
+
+function filter(f){
+  current=f;
+  render();
+}
+
+function addFlyer(){
+  const t=prompt("Title?");
+  const w=prompt("Where?");
+  if(!t||!w)return;
+
+  data.push({
+    id:Date.now(),
+    cat:"market",
+    label:"User",
+    title:t,
+    when:"Custom",
+    where:w
+  });
+
+  save();
+  render();
+}
+
+load();
+
+</script>
+
+</body>
+</html>
